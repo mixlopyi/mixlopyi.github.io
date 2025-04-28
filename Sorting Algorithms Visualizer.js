@@ -1,5 +1,3 @@
-
-// DOM elements
 const visualization = document.getElementById('visualization');
 const algorithmSelect = document.getElementById('algorithm');
 const arraySizeInput = document.getElementById('array-size');
@@ -8,6 +6,7 @@ const arrayInput = document.getElementById('array-input');
 const customArrayRow = document.getElementById('custom-array-row');
 const generateBtn = document.getElementById('generate-btn');
 const startBtn = document.getElementById('start-btn');
+const pauseBtn = document.getElementById('pause-btn');
 const resetBtn = document.getElementById('reset-btn');
 const speedControl = document.getElementById('speed');
 const speedValue = document.getElementById('speed-value');
@@ -17,18 +16,19 @@ const averageCaseElement = document.getElementById('average-case');
 const worstCaseElement = document.getElementById('worst-case');
 const actualTimeElement = document.getElementById('actual-time');
 const timeEquationElement = document.getElementById('time-equation');
-
 // State variables
 let array = [];
 let originalArray = [];
 let sortedArray = [];
 let isSorting = false;
+let isPaused = false;
 let animationSpeed = 1000 / 10; // Default speed (10)
 let startTime, endTime;
 let animationFrames = [];
 let currentFrame = 0;
+let animationTimeout = null;
 
-// Algorithm information
+// Algorithm information with detailed time complexity analysis
 const algorithmInfo = {
     bubble: {
         name: "Bubble Sort",
@@ -397,6 +397,7 @@ function init() {
     arrayTypeSelect.addEventListener('change', toggleCustomArrayInput);
     generateBtn.addEventListener('click', generateArray);
     startBtn.addEventListener('click', startSorting);
+    pauseBtn.addEventListener('click', togglePause);
     resetBtn.addEventListener('click', resetVisualization);
     speedControl.addEventListener('input', updateSpeed);
     
@@ -429,6 +430,8 @@ function updateSpeed() {
 
 // Generate a new array based on current settings
 function generateArray() {
+    if (isSorting) return;
+    
     const size = parseInt(arraySizeInput.value);
     const type = arrayTypeSelect.value;
     
@@ -565,7 +568,9 @@ function startSorting() {
     if (isSorting) return;
     
     isSorting = true;
-    startBtn.disabled = true;
+    isPaused = false;
+    startBtn.style.display = 'none';
+    pauseBtn.style.display = 'inline-flex';
     generateBtn.disabled = true;
     algorithmSelect.disabled = true;
     arraySizeInput.disabled = true;
@@ -637,21 +642,40 @@ function startSorting() {
     animateSorting();
 }
 
+// Toggle pause/resume of sorting animation
+function togglePause() {
+    if (!isSorting) return;
+    
+    isPaused = !isPaused;
+    
+    if (isPaused) {
+        clearTimeout(animationTimeout);
+        pauseBtn.textContent = 'Resume';
+    } else {
+        pauseBtn.textContent = 'Pause';
+        animateSorting();
+    }
+}
+
 // Animate the sorting process
 function animateSorting() {
-    if (currentFrame >= animationFrames.length) {
-        // Sorting complete
-        endTime = performance.now();
-        const executionTime = (endTime - startTime).toFixed(2);
-        actualTimeElement.textContent = `${executionTime} ms`;
-        
-        // Update the current array display to show the final sorted array
-        array = [...sortedArray];
-        updateArrayDisplays();
-        
-        displayTimeComplexity();
-        
-        isSorting = false;
+    if (isPaused || currentFrame >= animationFrames.length) {
+        if (currentFrame >= animationFrames.length) {
+            // Sorting complete
+            endTime = performance.now();
+            const executionTime = (endTime - startTime).toFixed(2);
+            actualTimeElement.textContent = `${executionTime} ms`;
+            
+            // Update the current array display to show the final sorted array
+            array = [...sortedArray];
+            updateArrayDisplays();
+            
+            displayTimeComplexity();
+            
+            isSorting = false;
+            startBtn.style.display = 'inline-flex';
+            pauseBtn.style.display = 'none';
+        }
         return;
     }
     
@@ -664,12 +688,16 @@ function animateSorting() {
     renderArray(frame);
     currentFrame++;
     
-    setTimeout(animateSorting, animationSpeed);
+    animationTimeout = setTimeout(animateSorting, animationSpeed);
 }
 
 // Reset the visualization
 function resetVisualization() {
     isSorting = false;
+    isPaused = false;
+    clearTimeout(animationTimeout);
+    startBtn.style.display = 'inline-flex';
+    pauseBtn.style.display = 'none';
     startBtn.disabled = false;
     generateBtn.disabled = false;
     algorithmSelect.disabled = false;
@@ -688,15 +716,85 @@ function resetVisualization() {
     timeEquationElement.textContent = "The time complexity equation will appear here after sorting completes.";
 }
 
-// Display time complexity explanation
+// Display time complexity explanation based on array type
 function displayTimeComplexity() {
     const algorithm = algorithmSelect.value;
     const info = algorithmInfo[algorithm];
     const size = array.length;
+    const arrayType = arrayTypeSelect.value;
     
     let equation = "";
     let solution = "";
+    let actualComplexity = "";
     
+    // Determine the actual complexity based on array type
+    switch (algorithm) {
+        case 'bubble':
+            if (arrayType === 'sorted') {
+                actualComplexity = "O(n) - Best case (already sorted)";
+            } else if (arrayType === 'reverse') {
+                actualComplexity = "O(n²) - Worst case (reverse sorted)";
+            } else {
+                actualComplexity = "O(n²) - Average case";
+            }
+            break;
+        case 'insertion':
+            if (arrayType === 'sorted') {
+                actualComplexity = "O(n) - Best case (already sorted)";
+            } else if (arrayType === 'reverse') {
+                actualComplexity = "O(n²) - Worst case (reverse sorted)";
+            } else if (arrayType === 'almost') {
+                actualComplexity = "O(n + d) - Where d is number of inversions (almost sorted)";
+            } else {
+                actualComplexity = "O(n²) - Average case";
+            }
+            break;
+        case 'selection':
+            actualComplexity = "O(n²) - Always performs the same regardless of input";
+            break;
+        case 'merge':
+            actualComplexity = "O(n log n) - Always performs the same regardless of input";
+            break;
+        case 'quick':
+            if (arrayType === 'sorted' || arrayType === 'reverse') {
+                actualComplexity = "O(n²) - Worst case (already sorted or reverse sorted)";
+            } else {
+                actualComplexity = "O(n log n) - Average case";
+            }
+            break;
+        case 'heap':
+            actualComplexity = "O(n log n) - Always performs the same regardless of input";
+            break;
+        case 'shell':
+            if (arrayType === 'sorted') {
+                actualComplexity = "O(n log n) - Best case (already sorted)";
+            } else if (arrayType === 'reverse') {
+                actualComplexity = "O(n²) - Worst case (reverse sorted)";
+            } else {
+                actualComplexity = "Between O(n log n) and O(n²) - Depends on gap sequence";
+            }
+            break;
+        case 'counting':
+            const max = Math.max(...array);
+            const min = Math.min(...array);
+            const range = max - min + 1;
+            actualComplexity = `O(n + k) where k=${range} (range of values)`;
+            break;
+        case 'radix':
+            const maxRadix = Math.max(...array.map(Math.abs));
+            const digits = maxRadix > 0 ? Math.floor(Math.log10(maxRadix)) + 1 : 1;
+            actualComplexity = `O(nk) where k=${digits} (number of digits)`;
+            break;
+        case 'bucket':
+            if (arrayType === 'sorted' || arrayType === 'reverse') {
+                actualComplexity = "O(n²) - Worst case (all elements fall into one bucket)";
+            } else {
+                actualComplexity = "O(n + k) - Average case where k is number of buckets";
+            }
+            break;
+    }
+    
+    // Create the equation and solution based on the algorithm
     switch (algorithm) {
         case 'bubble':
         case 'insertion':
@@ -736,7 +834,13 @@ function displayTimeComplexity() {
             break;
     }
     
-    timeEquationElement.innerHTML = `<strong>Time Complexity Calculation:</strong><br>${equation}<br><br><strong>Explanation:</strong><br>${solution}<br><br>${info.explanation}`;
+    timeEquationElement.innerHTML = `
+        <strong>Algorithm:</strong> ${info.name}<br>
+        <strong>Array Type:</strong> ${arrayType}<br>
+        <strong>Actual Complexity:</strong> ${actualComplexity}<br><br>
+        <strong>Time Complexity Calculation:</strong><br>${equation}<br><br>
+        <strong>Explanation:</strong><br>${solution}<br><br>
+        ${info.explanation}`;
 }
 
 // Sorting algorithms with animation frames
@@ -1235,6 +1339,5 @@ function bucketSort(arr) {
         }
     }
 }
-
 // Initialize the application
 init();
