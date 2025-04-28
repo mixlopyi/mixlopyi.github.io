@@ -1,3 +1,4 @@
+
 :root {
     --primary: #4361ee;
     --primary-dark: #3a56d4;
@@ -135,13 +136,23 @@ button:active {
     box-shadow: var(--shadow);
 }
 
-#reset-btn {
+#pause-btn {
     background-color: var(--warning);
+    color: var(--white);
+    display: none;
+}
+
+#pause-btn:hover {
+    background-color: #e68a19;
+}
+
+#reset-btn {
+    background-color: var(--danger);
     color: var(--white);
 }
 
 #reset-btn:hover {
-    background-color: #e68a19;
+    background-color: #e3176a;
 }
 
 button:disabled {
@@ -449,13 +460,22 @@ body.dark-mode #start-btn:hover {
 background-color: #3a56d4;
 }
 
-body.dark-mode #reset-btn {
+body.dark-mode #pause-btn {
 background-color: #f8961e;
 color: white;
 }
 
-body.dark-mode #reset-btn:hover {
+body.dark-mode #pause-btn:hover {
 background-color: #e68a19;
+}
+
+body.dark-mode #reset-btn {
+background-color: #f72585;
+color: white;
+}
+
+body.dark-mode #reset-btn:hover {
+background-color: #e3176a;
 }
 
 body.dark-mode button:disabled {
@@ -503,6 +523,12 @@ color: #7c9eff;
 body.dark-mode #dark-mode-toggle {
 filter: invert(1);
 }
+
+body.dark-mode #dark-mode-toggle + label {
+color: #e0e0e0;
+}
+
+
 
 body.dark-mode #dark-mode-toggle + label {
 color: #e0e0e0;
